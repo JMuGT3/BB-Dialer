@@ -84,6 +84,8 @@ class DialpadActivity : SimpleActivity() {
         letter_fastscroller.textColor = config.textColor.getColorStateList()
         letter_fastscroller_thumb.setupWithFastScroller(letter_fastscroller)
         letter_fastscroller_thumb.textColor = config.primaryColor.getContrastColor()
+
+        dialpad_input.requestFocus();
     }
 
     override fun onResume() {

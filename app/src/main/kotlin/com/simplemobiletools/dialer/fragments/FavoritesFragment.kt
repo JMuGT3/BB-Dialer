@@ -2,6 +2,7 @@ package com.simplemobiletools.dialer.fragments
 
 import android.content.Context
 import android.util.AttributeSet
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.reddit.indicatorfastscroll.FastScrollItemIndicator
 import com.simplemobiletools.commons.adapters.MyRecyclerViewAdapter
 import com.simplemobiletools.commons.dialogs.RadioGroupDialog
@@ -21,6 +22,7 @@ import java.util.*
 
 class FavoritesFragment(context: Context, attributeSet: AttributeSet) : MyViewPagerFragment(context, attributeSet), RefreshItemsListener {
     private var allContacts = ArrayList<SimpleContact>()
+    private var SCROLL_BY = 450;
 
     override fun setupFragment() {
         val placeholderResId = if (context.hasPermission(PERMISSION_READ_CONTACTS)) {
@@ -111,4 +113,26 @@ class FavoritesFragment(context: Context, attributeSet: AttributeSet) : MyViewPa
             }
         })
     }
+
+    fun clickItem(item: Int) {
+        if(fragment_list == null)
+            return
+        var position = (fragment_list.layoutManager as LinearLayoutManager?)!!.findFirstVisibleItemPosition()
+        position += item;
+        fragment_list.findViewHolderForAdapterPosition(position)?.itemView?.performClick()
+        //fragment_list.findViewHolderForAdapterPosition(item)?.itemView?.performClick()
+    }
+
+    fun scrollDown() {
+        if(fragment_list == null)
+            return
+        fragment_list.smoothScrollBy(0, SCROLL_BY);
+    }
+
+    fun scrollUp() {
+        if(fragment_list == null)
+            return
+        fragment_list.smoothScrollBy(0, -SCROLL_BY);
+    }
+
 }

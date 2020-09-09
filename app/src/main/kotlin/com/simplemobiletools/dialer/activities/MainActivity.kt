@@ -1,8 +1,10 @@
 package com.simplemobiletools.dialer.activities
 
 import android.annotation.SuppressLint
+import android.app.AlertDialog
 import android.app.SearchManager
 import android.content.Context
+import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.ShortcutInfo
 import android.content.res.Configuration
@@ -12,14 +14,13 @@ import android.graphics.drawable.Icon
 import android.graphics.drawable.LayerDrawable
 import android.os.Bundle
 import android.os.Handler
-import android.view.Menu
-import android.view.MenuItem
+import android.util.Log
+import android.view.*
 import androidx.appcompat.widget.SearchView
 import androidx.core.view.MenuItemCompat
 import androidx.viewpager.widget.ViewPager
 import com.simplemobiletools.commons.extensions.*
 import com.simplemobiletools.commons.helpers.*
-import com.simplemobiletools.commons.models.FAQItem
 import com.simplemobiletools.dialer.BuildConfig
 import com.simplemobiletools.dialer.R
 import com.simplemobiletools.dialer.adapters.ViewPagerAdapter
@@ -29,15 +30,21 @@ import com.simplemobiletools.dialer.helpers.tabsList
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.fragment_contacts.*
 import kotlinx.android.synthetic.main.fragment_favorites.*
+import kotlinx.android.synthetic.main.fragment_letters_layout.*
 import kotlinx.android.synthetic.main.fragment_recents.*
 import java.util.*
 
-class MainActivity : SimpleActivity() {
+class MainActivity : SimpleActivity(), View.OnGenericMotionListener {
     private var storedTextColor = 0
     private var storedPrimaryColor = 0
     private var isFirstResume = true
     private var isSearchOpen = false
     private var searchMenuItem: MenuItem? = null
+    private var lastX = 0f
+    private var lastY = 0f
+    private var horizontalThreshold = 200
+    private var verticalThreshold = 50
+    private var lastKeyCode = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -46,11 +53,15 @@ class MainActivity : SimpleActivity() {
         setupTabColors()
         storeStateVariables()
 
-        if (isDefaultDialer()) {
+
+        /*if (isDefaultDialer()) {
             checkContactPermissions()
         } else {
             launchSetDefaultDialerIntent()
-        }
+        }*/
+        baselayout.setOnGenericMotionListener(this)
+        checkContactPermissions()
+        initFragments()
     }
 
     override fun onResume() {
@@ -159,7 +170,14 @@ class MainActivity : SimpleActivity() {
             isSubmitButtonEnabled = false
             queryHint = getString(R.string.search)
             setOnQueryTextListener(object : SearchView.OnQueryTextListener {
-                override fun onQueryTextSubmit(query: String) = false
+                override fun onQueryTextSubmit(query: String): Boolean {
+                    when(viewpager.currentItem) {
+                        0 -> contacts_fragment.clickItem(0)
+                        1 -> favorites_fragment.clickItem(0)
+                        2 -> recents_fragment.clickItem(0)
+                    }
+                    return true
+                }
 
                 override fun onQueryTextChange(newText: String): Boolean {
                     if (isSearchOpen) {
@@ -319,14 +337,135 @@ class MainActivity : SimpleActivity() {
     }
 
     private fun launchAbout() {
-        val licenses = LICENSE_GLIDE or LICENSE_INDICATOR_FAST_SCROLL
-
-        val faqItems = arrayListOf(
-            FAQItem(R.string.faq_2_title_commons, R.string.faq_2_text_commons),
-            FAQItem(R.string.faq_6_title_commons, R.string.faq_6_text_commons),
-            FAQItem(R.string.faq_7_title_commons, R.string.faq_7_text_commons)
-        )
-
-        startAboutActivity(R.string.app_name, licenses, BuildConfig.VERSION_NAME, faqItems, true)
+        val builder: AlertDialog.Builder = AlertDialog.Builder(this)
+        builder.setTitle("Calculator")
+        builder.setMessage("Simple dialer app with Blackberry optimizations\nOptmized for hardware keyboard use\n\nBased on Simple-Dialer by SimpleMobileTools - https://www.simplemobiletools.com")
+        builder.setPositiveButton("OK", DialogInterface.OnClickListener { dialog, id ->
+        })
+        builder.show()
     }
+
+    override fun onGenericMotion(view: View?, event: MotionEvent?): Boolean {
+        if (event == null)
+            return true
+
+
+        //Log.i("gesture", event?.action.toString() + " @ " + event?.x.toString() + "/" + event?.y.toString() + "." + viewpager.currentItem)
+
+        if(event.action == MotionEvent.ACTION_DOWN) {
+            lastX = event.x;
+            lastY = event.y
+        }
+
+        if(event.action == MotionEvent.ACTION_MOVE) {
+
+            //swipe to right
+            if(event.x > lastX + horizontalThreshold) {
+                viewpager.setCurrentItem(viewpager.currentItem - 1, true)
+                lastX = event.x;
+                lastY = event.y
+            }
+
+            //siwpe to left
+            if(event.x < lastX - horizontalThreshold) {
+                viewpager.setCurrentItem(viewpager.currentItem + 1, true)
+                lastX = event.x;
+                lastY = event.y
+            }
+
+            //swipe up
+            if(event.y < lastY - verticalThreshold) {
+                when(viewpager.currentItem) {
+                    0 -> contacts_fragment.scrollDown()
+                    1 -> favorites_fragment.scrollDown()
+                    2 -> recents_fragment.scrollDown()
+                }
+            }
+
+            //swipe down
+            if(event.y > lastY + verticalThreshold) {
+                when(viewpager.currentItem) {
+                    0 -> contacts_fragment.scrollUp()
+                    1 -> favorites_fragment.scrollUp()
+                    2 -> recents_fragment.scrollUp()
+                }
+            }
+        }
+
+        //viewpager.dispatchTouchEvent(event)
+
+        return true;
+    }
+
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if(event.getAction() != KeyEvent.ACTION_UP)
+            return super.dispatchKeyEvent(event);
+
+        //Log.i("key up", java.lang.String.valueOf(event.keyCode) + " unicode char: " + event.unicodeChar)
+
+        if(lastKeyCode == 57) {
+            when(event.unicodeChar) {
+                97 -> if(viewpager.currentItem == 0) { //alt-a add contact
+                    fragment_fab.callOnClick();
+                }
+                112 -> main_dialpad_button.performClick() //alt-p dialpad
+                119 -> when(viewpager.currentItem) { //select first entry
+                    0 -> contacts_fragment.clickItem(0);
+                    1 -> favorites_fragment.clickItem(0);
+                    2 -> recents_fragment.clickItem(0);
+                }
+                101 -> when(viewpager.currentItem) { //select entry
+                    0 -> contacts_fragment.clickItem(1);
+                    1 -> favorites_fragment.clickItem(1);
+                    2 -> recents_fragment.clickItem(1);
+                }
+                114 -> when(viewpager.currentItem) { //select entry
+                    0 -> contacts_fragment.clickItem(2);
+                    1 -> favorites_fragment.clickItem(2);
+                    2 -> recents_fragment.clickItem(2);
+                }
+                115 -> when(viewpager.currentItem) { //select first entry
+                    0 -> contacts_fragment.clickItem(3);
+                    1 -> favorites_fragment.clickItem(3);
+                    2 -> recents_fragment.clickItem(3);
+                }
+                100 -> when(viewpager.currentItem) { //select entry
+                    0 -> contacts_fragment.clickItem(4);
+                    1 -> favorites_fragment.clickItem(4);
+                    2 -> recents_fragment.clickItem(4);
+                }
+                102 -> when(viewpager.currentItem) { //select entry
+                    0 -> contacts_fragment.clickItem(5);
+                    1 -> favorites_fragment.clickItem(5);
+                    2 -> recents_fragment.clickItem(5);
+                }
+                122 -> when(viewpager.currentItem) { //select first entry
+                    0 -> contacts_fragment.clickItem(6);
+                    1 -> favorites_fragment.clickItem(6);
+                    2 -> recents_fragment.clickItem(6);
+                }
+                120 -> when(viewpager.currentItem) { //select entry
+                    0 -> contacts_fragment.clickItem(7);
+                    1 -> favorites_fragment.clickItem(7);
+                    2 -> recents_fragment.clickItem(7);
+                }
+                99 -> when(viewpager.currentItem) { //select entry
+                    0 -> contacts_fragment.clickItem(8);
+                    1 -> favorites_fragment.clickItem(8);
+                    2 -> recents_fragment.clickItem(8);
+                }
+            }
+        } else {
+            if(event.unicodeChar >= 97 && event.unicodeChar <= 122) {
+                searchMenuItem?.expandActionView()
+                var v = searchMenuItem?.actionView as SearchView
+                val pressedKey = event.unicodeChar.toChar()
+                v.setQuery(pressedKey.toString(), false)
+            }
+        }
+
+        lastKeyCode = event.keyCode;
+        return super.dispatchKeyEvent(event)
+    }
+
 }

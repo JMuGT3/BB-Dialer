@@ -1,8 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/baselayout"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:clickable="false"
+    android:focusableInTouchMode="true">
 
     <com.google.android.material.tabs.TabLayout
         android:id="@+id/main_tabs_holder"
@@ -14,11 +17,12 @@
         app:tabMinWidth="150dp"
         app:tabSelectedTextColor="@android:color/white" />
 
-    <com.simplemobiletools.commons.views.MyViewPager
+    <com.simplemobiletools.commons.views.MyDialogViewPager
         android:id="@+id/viewpager"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_below="@+id/main_tabs_holder" />
+        android:layout_below="@+id/main_tabs_holder"
+        android:focusableInTouchMode="true" />
 
     <ImageView
         android:id="@+id/main_dialpad_button"

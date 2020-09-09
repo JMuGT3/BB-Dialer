@@ -58,6 +58,10 @@ class ContactsAdapter(activity: SimpleActivity, var contacts: ArrayList<SimpleCo
         }
     }
 
+    fun getItemAtPosition(position: Int): SimpleContact {
+        return contacts[position]
+    }
+
     override fun getSelectableItemCount() = contacts.size
 
     override fun getIsItemSelectable(position: Int) = true

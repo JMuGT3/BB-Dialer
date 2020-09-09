@@ -2,6 +2,7 @@ package com.simplemobiletools.dialer.fragments
 
 import android.content.Context
 import android.util.AttributeSet
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.simplemobiletools.commons.extensions.*
 import com.simplemobiletools.commons.helpers.MyContactsContentProvider
 import com.simplemobiletools.commons.helpers.PERMISSION_READ_CALL_LOG
@@ -13,9 +14,12 @@ import com.simplemobiletools.dialer.extensions.config
 import com.simplemobiletools.dialer.helpers.RecentsHelper
 import com.simplemobiletools.dialer.interfaces.RefreshItemsListener
 import com.simplemobiletools.dialer.models.RecentCall
+import kotlinx.android.synthetic.main.fragment_letters_layout.view.*
 import kotlinx.android.synthetic.main.fragment_recents.view.*
 
 class RecentsFragment(context: Context, attributeSet: AttributeSet) : MyViewPagerFragment(context, attributeSet), RefreshItemsListener {
+    private var SCROLL_BY = 450;
+
     override fun setupFragment() {
         val placeholderResId = if (context.hasPermission(PERMISSION_READ_CALL_LOG)) {
             R.string.no_previous_calls
@@ -108,5 +112,25 @@ class RecentsFragment(context: Context, attributeSet: AttributeSet) : MyViewPage
                 }
             }
         }
+    }
+
+    fun scrollDown() {
+        if(fragment_list == null)
+            return
+        fragment_list.smoothScrollBy(0, SCROLL_BY);
+    }
+
+    fun scrollUp() {
+        if(fragment_list == null)
+            return
+        fragment_list.smoothScrollBy(0, -SCROLL_BY);
+    }
+
+    fun clickItem(item: Int) {
+        if(fragment_list == null)
+            return
+        var position = (fragment_list?.layoutManager as LinearLayoutManager?)!!.findFirstVisibleItemPosition()
+        position += item;
+        fragment_list.findViewHolderForAdapterPosition(position)?.itemView?.performClick()
     }
 }
